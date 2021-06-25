@@ -13,6 +13,7 @@ While the approach you take to meeting the above objectives is up to you, here a
 * Create a new README with details on how the CI/CD process works.
 
 **Bonus**
+* Add more quality gates to pipeline (code quality tool, mutant testing tools, dependency vulnerability tools)
 * Update the `serverless.yml` file to deploy this function as a lambda.
 * Update the `serverless.yml` file to hypothetically create an AWS db cluster. Expose the connection string and use it in the lambda created above.
 
