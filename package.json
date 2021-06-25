@@ -1,0 +1,54 @@
+{
+	"name": "devops-challenge",
+	"description": "a sportradar devops challenge",
+	"version": "1.0.0",
+	"author": "Justin Shreve",
+	"main": "index.js",
+	"engines": {
+		"node": "14.x",
+		"npm": "6.2"
+	},
+	"license": "ISC",
+	"scripts": {
+		"start-test-db": "docker-compose up -d testdb",
+		"migrate": "node -e 'require(\"./migrate\")(\"postgres://sr:test@localhost:1265/devops\")'",
+		"test": "standard && NODE_ENV=test DB_HOST=localhost DB_PORT=1265 DB_USER=sr DB_PASS=test DB_NAME=devops node_modules/jest/bin/jest.js"
+	},
+	"dependencies": {
+		"error": "^7.0.2",
+		"express": "4.17.1",
+		"serverless-http": "2.5.0",
+		"knex": "0.21.6",
+		"pg": "8.3.2",
+		"postgres": "1.0.2",
+		"uuid": "3.3.2"
+	},
+	"devDependencies": {
+		"jest": "26.2.2",
+		"serverless": "^2.48.0",
+		"standard": "14.3.1"
+	},
+	"jest": {
+		"clearMocks": true,
+		"collectCoverage": true,
+		"testPathIgnorePatterns": [
+			"/node_modules/"
+		]
+	},
+	"standard": {
+		"globals": [
+			"angular",
+			"describe",
+			"it",
+			"beforeEach",
+			"before",
+			"afterEach",
+			"after",
+			"beforeAll",
+			"afterAll",
+			"jest",
+			"test",
+			"expect"
+		]
+	}
+}

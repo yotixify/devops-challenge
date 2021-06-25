@@ -1,0 +1,66 @@
+service: devops-challenge
+
+custom:
+  enabled:
+    prod: true
+    notprod: false
+  apigatewayid:
+    prod: ${ssm:API_GATEWAY_ID}
+  apigatewayrootid:
+    prod: ${ssm:API_GATEWAY_RESOURCE_ID}
+  
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: ${opt:stage}
+  region: ${opt:region}
+  versionFunctions: ${self:custom.enabled.${self:provider.stage}, self:custom.enabled.notprod}
+  logRetentionInDays: 30
+  stackTags:
+    Project: ${self:service}
+    Stage: ${self:provider.stage}
+  deploymentBucket:
+    name: ${ssm:DEPLOYMENT_BUCKET}
+  apiGateway:
+    minimumCompressionSize: 1024
+    restApiId: ${self:custom.apigatewayid.${self:provider.stage}, ''}
+    restApiRootResourceId: ${self:custom.apigatewayrootid.${self:provider.stage}, ''}
+  environment:
+    STAGE: ${self:provider.stage}
+    SERVICE: ${self:service}
+    DB_HOST: # get host from config below??
+    DB_PORT: 5432
+    DB_NAME: 
+    DB_USER:
+
+package:
+  patterns:
+    - '!.env'
+    - '!node_modules/serverless/**'
+    - '!node_modules/aws-sdk/**'
+    - '!test*'
+    - '!./**/__tests__/**'
+    - '!./**/**/__tests__/**'
+    - '!__tests__/**'
+    - '!docker-compose.yml'
+    - '!buildspec.yml'
+    - '!README*'
+    - '!.nyc_output'
+    - '!.test-setup.js'
+    - '!__mocks__/**'
+    - '!nodejs/**'
+    - '!coverage/**'
+    - '!migrations/**'
+    - '!migrate.js'
+    
+functions:
+
+  User:
+    # ?
+    
+resources:
+  Resources:
+    # DB cluster??
+    
+
+    

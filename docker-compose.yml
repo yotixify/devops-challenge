@@ -1,0 +1,16 @@
+version: '2'
+
+services:
+  testdb:
+    image: postgres:11.1
+    ports:
+      - '1265:5432'
+    environment:
+     - "POSTGRES_USER=sr"
+     - "POSTGRES_PASSWORD=test"
+     - "POSTGRES_DB=devops"
+     - "TZ=GMT"
+    volumes:
+      - ops-challenge-db-test:/var/lib/postgresql/data
+volumes:
+  ops-challenge-db-test:
