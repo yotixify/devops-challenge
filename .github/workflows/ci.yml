@@ -28,5 +28,5 @@ jobs:
       - name: cfn-lint-action
         uses: ScottBrenner/cfn-lint-action@v2.1.7
         with:
-          command: cfn-lint -b -t ./serverless.yml
+          command: cfn-lint -t ./serverless.yml
           
