@@ -9,7 +9,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  build:
+  unit-tests:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -20,3 +20,13 @@ jobs:
       - run: npm install
       - run: npm run start-test-db; sleep 5; npm run migrate
       - run: npm test
+  
+  cfn-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: cfn-lint-action
+        uses: ScottBrenner/cfn-lint-action@v2.1.7
+        with:
+          command: cfn-lint -b -t ./serverless.yml
+          
