@@ -24,7 +24,9 @@ jobs:
   cfn-lint:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: cfn-lint-action
         uses: ScottBrenner/cfn-lint-action@v2.1.7
         with:
-          command: -b
+          command: cfn-lint -b -t ./serverless.yml
+          
