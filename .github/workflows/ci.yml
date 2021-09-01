@@ -21,12 +21,12 @@ jobs:
       - run: npm run start-test-db; sleep 5; npm run migrate
       - run: npm test
   
-  cfn-lint:
+  snyk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: cfn-lint-action
-        uses: ScottBrenner/cfn-lint-action@v2.1.7
-        with:
-          command: cfn-lint -b -t ./serverless.yml
+      - name: Snyk
+        uses: snyk/actions@0.3.0
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           
