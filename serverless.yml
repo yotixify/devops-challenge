@@ -28,10 +28,11 @@ provider:
   environment:
     STAGE: ${self:provider.stage}
     SERVICE: ${self:service}
-    DB_HOST: # get host from config below??
-    DB_PORT: 5432
-    DB_NAME: 
-    DB_USER:
+    DB_HOST: Fn::GetAtt: [ "DBInstance", "Endpoint.Port" ]
+    DB_PORT: Fn::GetAtt: [ "DBInstance", "Endpoint.Address" ]
+    DB_NAME: postgres
+    DB_USER: Fn::Sub: "{{resolve:secretsmanager:${RDSInstanceRotationSecret}::username}}"
+    DB_PASS: Fn::Sub: "{{resolve:secretsmanager:${RDSInstanceRotationSecret}::password}}"
 
 package:
   patterns:
@@ -53,14 +54,134 @@ package:
     - '!migrations/**'
     - '!migrate.js'
     
-functions:
-
-  User:
-    # ?
-    
 resources:
   Resources:
-    # DB cluster??
+   #This is the VPC that the rotation Lambda function and the RDS instance will be placed in
+    RdsVpc:
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock: 10.0.0.0/16
+        EnableDnsHostnames: true
+        EnableDnsSupport: true
+        
+    # Subnet that the rotation Lambda function and the RDS instance will be placed in 
+    RdsSubnet1:
+      Type: AWS::EC2::Subnet
+      Properties:
+        CidrBlock: 10.0.96.0/19
+        AvailabilityZone:
+          Fn::Select:
+          - '0'
+          - Fn::GetAZs:
+              Ref: AWS::Region
+        VpcId:
+          Ref: RdsVpc
+    RdsSubnet2:
+      Type: AWS::EC2::Subnet
+      Properties:
+        CidrBlock: 10.0.128.0/19
+        AvailabilityZone:
+          Fn::Select:
+          - '1'
+          - Fn::GetAZs:
+              Ref: AWS::Region
+        VpcId:
+          Ref: TesRdsVpctVPC
+          
+    #VPC endpoint that will enable the rotation Lambda function to make api calls to Secrets Manager 
+    SecretsManagerVPCEndpoint:
+      Type: AWS::EC2::VPCEndpoint
+      Properties:
+        SubnetIds:
+        - Ref: RdsSubnet1
+        - Ref: RdsSubnet2
+        SecurityGroupIds:
+        - Fn::GetAtt:
+          - RdsVpc
+          - DefaultSecurityGroup
+        VpcEndpointType: Interface
+        ServiceName:
+          Fn::Sub: com.amazonaws.${AWS::Region}.secretsmanager
+        PrivateDnsEnabled: true
+        VpcId:
+          Ref: RdsVpc
     
+    #This is a Secret resource with a randomly generated password in its SecretString JSON.
+    RDSInstanceRotationSecret:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Description: This is my rds instance secret
+        GenerateSecretString:
+          SecretStringTemplate: '{"username": "admin"}'
+          GenerateStringKey: password
+          PasswordLength: 16
+          ExcludeCharacters: "\"@/\\"
+        Tags:
+        - Key: AppName
+          Value: DevOps-Challenge
+          
+    DBInstance:
+      Type: AWS::RDS::DBInstance
+      Properties:
+        AllocatedStorage: 20
+        DBInstanceClass: db.t2.micro
+        Engine: aurora-postgresql
+        DBSubnetGroupName:
+          Ref: DBSubnetGroup
+        MasterUsername:
+          Fn::Sub: "{{resolve:secretsmanager:${RDSInstanceRotationSecret}::username}}"
+        MasterUserPassword:
+          Fn::Sub: "{{resolve:secretsmanager:${RDSInstanceRotationSecret}::password}}"
+        BackupRetentionPeriod: 0
+        VPCSecurityGroups:
+        - Fn::GetAtt:
+          - RdsVpc
+          - DefaultSecurityGroup
+          
+    #Database subnet group for the RDS instance 
+    DBSubnetGroup:
+      Type: AWS::RDS::DBSubnetGroup
+      Properties:
+        DBSubnetGroupDescription: Test Group
+        SubnetIds:
+        - Ref: RdsSubnet1
+        - Ref: RdsSubnet2
+        
+    #This is a SecretTargetAttachment resource which updates the referenced Secret resource with properties about
+    #the referenced RDS instance
+    SecretRDSInstanceAttachment:
+      Type: AWS::SecretsManager::SecretTargetAttachment
+      Properties:
+        SecretId:
+          Ref: RDSInstanceRotationSecret
+        TargetId:
+          Ref: DBInstance
+        TargetType: AWS::RDS::DBInstance
+    
+    #This is a RotationSchedule resource. It configures rotation of password for the referenced secret using a rotation lambda function
+    #The first rotation happens at resource creation time, with subsequent rotations scheduled according to the rotation rules
+    #We explicitly depend on the SecretTargetAttachment resource being created to ensure that the secret contains all the
+    #information necessary for rotation to succeed
+    SecretRotationSchedule:
+      Type: AWS::SecretsManager::RotationSchedule
+      DependsOn: SecretRDSInstanceAttachment
+      Properties:
+        SecretId:
+          Ref: RDSInstanceRotationSecret
+        HostedRotationLambda:
+          RotationType: PostgreSQLSingleUser
+          RotationLambdaName: SecretsManagerRotation
+          VpcSecurityGroupIds:
+            Fn::GetAtt:
+            - RdsVpc
+            - DefaultSecurityGroup
+          VpcSubnetIds:
+            Fn::Join:
+            - ","
+            - - Ref: RdsSubnet1
+              - Ref: RdsSubnet2
+        RotationRules:
+          AutomaticallyAfterDays: 30
+      
 
-    
+      
