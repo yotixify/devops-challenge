@@ -21,7 +21,7 @@ jobs:
       - run: npm run start-test-db; sleep 5; npm run migrate
       - run: npm test
   
-  cfn-lint:
+  snyk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
