@@ -28,11 +28,15 @@ provider:
   environment:
     STAGE: ${self:provider.stage}
     SERVICE: ${self:service}
-    DB_HOST: Fn::GetAtt: [ "DBInstance", "Endpoint.Port" ]
-    DB_PORT: Fn::GetAtt: [ "DBInstance", "Endpoint.Address" ]
+    DB_HOST: 
+      Fn::GetAtt: [DBInstance,Endpoint.Port]
+    DB_PORT: 
+      Fn::GetAtt: [DBInstance,Endpoint.Address]
     DB_NAME: postgres
-    DB_USER: Fn::Sub: "{{resolve:secretsmanager:${RDSInstanceRotationSecret}::username}}"
-    DB_PASS: Fn::Sub: "{{resolve:secretsmanager:${RDSInstanceRotationSecret}::password}}"
+    DB_USER: 
+      Fn::Sub: "{{resolve:secretsmanager:${RDSInstanceRotationSecret}::username}}"
+    DB_PASS: 
+      Fn::Sub: "{{resolve:secretsmanager:${RDSInstanceRotationSecret}::password}}"
 
 package:
   patterns:
